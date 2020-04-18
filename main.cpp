@@ -22,7 +22,7 @@ int main( ){
     pthread_t *tids;
     Arg *args;
 
-    int nx = 3 , ny = 3 , p =3, *error;
+    int nx = 3 , ny = 3 , p =2, *error;
 
 
 	

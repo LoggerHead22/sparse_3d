@@ -133,6 +133,7 @@ int get_num_offdiag(int nx, int ny, int k){
 	
 	abort();
 	return -1000;
+	
 }
 
 	
@@ -225,7 +226,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	abort();
 	  
 	return -1000;
-		
+	
 }
 
 int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
@@ -275,16 +276,15 @@ void build_MSR_matrix(int nx , int ny, double*a, int *I, int p , int k){
 	for(int  l = k1; l < k2; l++){
 		s = get_offdiag_elem(nx , ny , l, a + l , a + I[l] , I + I[l]);
 		sum+=s;
-		cout<<"L " << s <<" k"<< l<<endl;
+		// cout<<"thr: "<<k<< "L " << s <<" k"<< l<<endl;
 	}
 	cout<<"N "<<N<<" "<<sum<<" "<<k1<<" "<<k2<<endl;
 
-	//reduce_sum( p , &sum);
-	pthread_barrier_wait(&barrier);
+	reduce_sum( p , &sum);
+	//pthread_barrier_wait(&barrier);
 	
 	cout<<"ASSSERT "<<sum<<" "<<I[N]<<" "<<N + 1 + sum<<endl;
-	//assert( N + 1 + sum == I[N]);
-	
+	assert( N + 1 + sum == I[N]);	
 }
 
 void reduce_sum(int p, int *sum){
@@ -296,27 +296,27 @@ void reduce_sum(int p, int *sum){
     static int t_out=0;
 
 	static int sums = -1;
-	/*if(*sum !=0){
+	
+    pthread_mutex_lock(&mu);
+	if(sum){
 		if(sums == -1){
 			sums = *sum;
 		}else{
 			sums+=*sum;
 		}
-	}*/
-    pthread_mutex_lock(&mu);
-
+	}
     t_in++;
+
     if(t_in>=p){
             t_out=0;
             pthread_cond_broadcast(&c_in);
     }else while(t_in<p) pthread_cond_wait(&c_in,&mu);
 	
-	/*if(*sum !=0){
+	if(sum){
 		*sum = sums;
-	}*/
+	}
 	
     t_out++;
-	
     if(t_out>=p){
 			t_in = 0;
             pthread_cond_broadcast(&c_out);
@@ -372,9 +372,9 @@ void* msl_approx(void *in_arg) {
 	}
 	
 	
-	//reduce_sum(p);
+	reduce_sum(p);
 	
-	pthread_barrier_wait(&barrier);
+	//pthread_barrier_wait(&barrier);
 	cout<<"Thread: "<<thr_ind<<endl;
 	
 	cout<<l<<endl;
@@ -385,14 +385,13 @@ void* msl_approx(void *in_arg) {
 	}*/
 	
 	cout<<"Ready to built"<<endl;
-	
 	build_MSR_matrix(nx , ny , A , I, p, thr_ind);
 	
 	reduce_sum(p);
 	if(thr_ind == 0){
 		//print_MSR_matrix(A,I,N);
 		print_matrix(N , A, I);
-		cout<< l<<endl;
+		//cout<< l<<endl;
 	}
 	
 	
