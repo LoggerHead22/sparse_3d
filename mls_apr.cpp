@@ -62,7 +62,7 @@ void print_matrix (int N, double *a, int *I)
                 {
                   if (I[pos + q] == j)
                     {
-                      printf ("%.3f \t", a[pos + q]);
+                      printf ("%.3f  \t", a[pos + q]);
                       break;
                     }
                 }
@@ -70,12 +70,12 @@ void print_matrix (int N, double *a, int *I)
 
               if (q == raw_size)
                 {
-                  printf ("%0.f \t", 0.);
+                  printf ("%0.f  \t", 0.);
                 }
             }
           else
             {
-              printf ("%.3f \t", a[i]);
+              printf ("%.3f  \t", a[i]);
             }
         }
       printf ("\n");
@@ -84,7 +84,8 @@ void print_matrix (int N, double *a, int *I)
 
 
 void print_vector(double* m, int size) {
-	for (int y = 0; y < ((size < 10) ? size : 10); y++) {
+	int N = 16;
+	for (int y = 0; y < ((size < N) ? size : N); y++) {
 		cout << m[y] << "  ";
 	}
 	cout << endl;
@@ -151,73 +152,118 @@ int get_non_zeros(int nx, int ny){
 
 //total_size = K + 1 + nz 
 
-int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int *I){
+int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int *I , double * b , parral &par , double (*f) (double,double)){
 	int i, j; 
-	
+	double hx = par.hx, hy = par.hy;
 	get_ij(nx,ny,k,i,j);
 	
 	
 	#define I(x,y) get_k(nx , ny, x , y)
 	
+	#define _36_1 par.f_par(par.xs[i] , par.ys[j] ,f)
+	
+	#define _20_1 par.f_par(par.xs[i] , (par.ys[j + 1] + par.ys[j])/2, f)
+	#define _20_2 par.f_par((par.xs[i + 1] + par.xs[i])/2 , (par.ys[j + 1] + par.ys[j])/2, f)
+	#define _20_3 par.f_par((par.xs[i + 1] + par.xs[i])/2,par.ys[j] , f)
+	#define _20_4 par.f_par(par.xs[i] , (par.ys[j - 1] + par.ys[j])/2, f)
+	#define _20_5 par.f_par((par.xs[i - 1] + par.xs[i])/2 ,(par.ys[j - 1] + par.ys[j])/2, f)
+	#define _20_6 par.f_par((par.xs[i - 1] + par.xs[i])/2,par.ys[j] , f)
+
+	#define _4_1  par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[j+1] ,f)
+	#define _4_2  par.f_par( par.xs[i+1] , (par.ys[j+1] + par.ys[j])/2 ,f)
+	#define _4_3  par.f_par((par.xs[i + 1] + par.xs[i]) / 2, (par.ys[j] + par.ys[j-1]) / 2 , f)
+	#define _4_4  par.f_par((par.xs[i-1] + par.xs[i])/2, par.ys[j-1], f)
+	#define _4_5  par.f_par(par.xs[i-1], (par.ys[j] + par.ys[j-1]) / 2 , f)
+	#define _4_6  par.f_par((par.xs[i - 1] + par.xs[i]) / 2, (par.ys[j] + par.ys[j + 1]) / 2 , f)
+
+	#define _2_1  par.f_par(par.xs[i]     ,par.ys[j + 1], f)
+	#define _2_2  par.f_par(par.xs[i + 1] ,par.ys[j + 1], f)
+	#define _2_3  par.f_par(par.xs[i + 1] ,par.ys[j]    , f)
+	#define _2_4  par.f_par(par.xs[i]     ,par.ys[j - 1], f)
+	#define _2_5  par.f_par(par.xs[i - 1] ,par.ys[j - 1], f)
+	#define _2_6  par.f_par(par.xs[i - 1] ,par.ys[j]    , f)
+	
+	
 	if( i >=1 && i <=nx -1 && j>=1 && j<=ny - 1){
-		*a_diag = 0.5;
-		 I[0] = I(i,j-1);   a[0] = 1./12;
-		 I[1] = I(i,j+1);   a[1] = 1./12;
-		 I[2] = I(i-1,j);   a[2] = 1./12;
-		 I[3] = I(i+1,j);   a[3] = 1./12;
-		 I[4] = I(i-1,j-1); a[4] = 1./12;
-		 I[5] = I(i+1,j+1); a[5] = 1./12;
-		 return 6;
+		*a_diag = 0.5*hx*hy;
+		 I[0] = I(i,j-1);   a[0] = 1./12*hx*hy;
+		 I[1] = I(i,j+1);   a[1] = 1./12*hx*hy;
+		 I[2] = I(i-1,j);   a[2] = 1./12*hx*hy;
+		 I[3] = I(i+1,j);   a[3] = 1./12*hx*hy;
+		 I[4] = I(i-1,j-1); a[4] = 1./12*hx*hy;
+		 I[5] = I(i+1,j+1); a[5] = 1./12*hx*hy;
+		 b[I(i,j)] = (36*_36_1 + 
+				20*(_20_1 + _20_2 + _20_3 +  _20_4 + _20_5 + _20_6)+
+				4*(_4_1 + _4_2 + _4_3 + _4_4 + _4_5 + _4_6) +
+				2*(_2_1 + _2_2 + _2_3 + _2_4 + _2_5 + _2_6) )* hx*hy /192;;
+				
+		return 6;
 	}
 	else if( (i >=1 && i <=nx -1 && j==0)){
-		*a_diag = 0.25;
-		I[0] = I(i,j+1);   a[0] = 1./12;
-		I[1] = I(i-1,j);   a[1] = 1./24;
-		I[2] = I(i+1,j);   a[2] = 1./24;
-		I[3] = I(i+1,j+1); a[3] = 1./12;
+		*a_diag = 0.25*hx*hy;
+		I[0] = I(i,j+1);   a[0] = 1./12*hx*hy;
+		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
+		I[2] = I(i+1,j);   a[2] = 1./24*hx*hy;
+		I[3] = I(i+1,j+1); a[3] = 1./12*hx*hy;
+		b[I(i,j)] = (18*_36_1 + 20*(_20_1 + _20_2) + 10*(_20_6 + _20_3) +
+					+ 4*(_4_6 + _4_1 + _4_2) + 2*(_2_1 + _2_2) + 1*(_2_6 + _2_3))*hx*hy/192;
 		return 4;
 	}else if( (i >=1 && i <=nx -1 && j==ny)){
-		*a_diag = 0.25;
-		I[0] = I(i,j-1);   a[0] = 1./12;
-		I[1] = I(i-1,j);   a[1] = 1./24;
-		I[2] = I(i+1,j);   a[2] = 1./12;
-		I[3] = I(i-1,j-1); a[3] = 1./24;
+		*a_diag = 0.25*hx*hy;
+		I[0] = I(i,j-1);   a[0] = 1./12*hx*hy;
+		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
+		I[2] = I(i+1,j);   a[2] = 1./12*hx*hy;
+		I[3] = I(i-1,j-1); a[3] = 1./24*hx*hy;
+		b[I(i,j)] = (18*_36_1 + 20*(_20_5 + _20_4) + 10*(_20_6 + _20_3) +
+					+ 4*(_4_5 + _4_4 + _4_3) + 2*(_2_5 + _2_4) + 1*(_2_6 + _2_3))*hx*hy/192;
 		return 4;
 	}else if( (i ==0 && j >=1 && j<=ny-1)){
-		*a_diag = 0.25;
-		I[0] = I(i,j-1);  a[0] = 1./24;
-		I[1] = I(i,j+1);  a[1] = 1./12;
-		I[2] = I(i+1,j);  a[2] = 1./12;
-		I[3] = I(i+1,j+1);a[3] = 1./24;
+		*a_diag = 0.25*hx*hy;
+		I[0] = I(i,j-1);  a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1);  a[1] = 1./12*hx*hy;
+		I[2] = I(i+1,j);  a[2] = 1./12*hx*hy;
+		I[3] = I(i+1,j+1);a[3] = 1./24*hx*hy;
+		b[I(i,j)] = (18*_36_1 + 20*(_20_2 + _20_3) + 10*(_20_1 + _20_4) +
+					+ 4*(_4_1 + _4_2 + _4_3) + 2*(_2_2 + _2_3) + 1*(_2_1 + _2_4))*hx*hy/192;
 		return 4; 
 	}else if( (i ==nx && j>=1 && j <= ny - 1)){
-		*a_diag = 0.25;
-		I[0] = I(i,j-1);   a[0] = 1./24;
-		I[1] = I(i,j+1);   a[1] = 1./24;
-		I[2] = I(i-1,j);   a[2] = 1./12;
-		I[3] = I(i-1,j-1); a[3] = 1./12;
+		*a_diag = 0.25*hx*hy;
+		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1);   a[1] = 1./24*hx*hy;
+		I[2] = I(i-1,j);   a[2] = 1./12*hx*hy;
+		I[3] = I(i-1,j-1); a[3] = 1./12*hx*hy;
+		b[I(i,j)] = (18*_36_1 + 20*(_20_5 + _20_6) + 10*(_20_1 + _20_4) +
+					+ 4*(_4_4 + _4_5 + _4_6) + 2*(_2_5 + _2_6) + 1*(_2_1 + _2_4))*hx*hy/192;
 		return 4;
 	}else if (i==0 && j==0){
-		*a_diag = 1./6;
-		I[0] = I(i+1,j);   a[0] = 1./24;
-		I[1] = I(i,j+1);   a[1] = 1./24;
-		I[2] = I(i+1,j+1); a[2] = 1./12;
+		*a_diag = 1./6*hx*hy;
+		I[0] = I(i+1,j);   a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1);   a[1] = 1./24*hx*hy;
+		I[2] = I(i+1,j+1); a[2] = 1./12*hx*hy;
+		b[I(i,j)] = (12*_36_1 + 20*(_20_2) + 10*(_20_1 + _20_3) +
+					+ 4*(_4_1 + _4_2) + 2*(_2_2) + 1*(_2_1 + _2_3))*hx*hy/192;
 		return 3;	
 	}else if (i==nx && j==ny){
-		*a_diag = 1./6;
-		I[0] = I(i,j-1);   a[0] = 1./24; 
-		I[1] = I(i-1,j);   a[1] = 1./24;
-		I[2] = I(i-1,j-1); a[2] = 1./12;
+		*a_diag = 1./6*hx*hy;
+		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy; 
+		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
+		I[2] = I(i-1,j-1); a[2] = 1./12*hx*hy;
+		b[I(i,j)] = (12*_36_1 + 20*(_20_5) + 10*(_20_4 + _20_6) +
+					+ 4*(_4_4 + _4_5) + 2*(_2_5) + 1*(_2_4 + _2_6))*hx*hy/192;
 		return 3;
 	}else if (i==nx && j==0){
-		*a_diag = 1./12;
-		I[0] = I(i,j+1); a[0] = 1./24;
-		I[1] = I(i-1,j); a[1] = 1./24;
+		*a_diag = 1./12*hx*hy;
+		I[0] = I(i,j+1); a[0] = 1./24*hx*hy;
+		I[1] = I(i-1,j); a[1] = 1./24*hx*hy;
+		b[I(i,j)] = (6*_36_1 + 10*(_20_1 + _20_6) +
+					+ 4*(_4_6) +  1*(_2_1 + _2_6))*hx*hy/192;
 		return 2;
 	}else if (i==0 && j==ny){
-		*a_diag = 1./12;
-		I[0] = I(i,j-1);   a[0] = 1./24;
-		I[1] = I(i + 1,j); a[1] = 1./24;
+		*a_diag = 1./12*hx*hy;
+		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy;
+		I[1] = I(i + 1,j); a[1] = 1./24*hx*hy;
+		b[I(i,j)] = (6*_36_1 + 10*(_20_3 + _20_4) +
+					+ 4*(_4_3) +  1*(_2_3 + _2_4))*hx*hy/192;
 		return 2;
 	}
 		
@@ -230,7 +276,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 }
 
 int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
-	double *a;
+	double *a , *b;
 	int *I;
 	
 	
@@ -248,6 +294,8 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 	if(!I) {
 		delete []a; return -2;
 	}
+
+
 	I[0] = N + 1;
 	
 	for(k =1 ; k <=N; k++){
@@ -256,7 +304,7 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 		s+=l;
 		//cout<<"L " << l <<" k"<<k -1<<endl;
 	}
-	cout<<"COUNT "<<nz <<" "<<s<<" "<<I[N]<<" "<<len;
+	//cout<<"COUNT "<<nz <<" "<<s<<" "<<I[N]<<" "<<len;
 	assert(nz == s);
 	assert(I[N] == len);
 	p_a = a;
@@ -267,23 +315,23 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 } 
 
 
-void build_MSR_matrix(int nx , int ny, double*a, int *I, int p , int k){
+void build_MSR_matrix(int nx , int ny, double*a, int *I, double *b, int p , int k , parral &par , double (*f) (double,double)){
 	int k1 , k2 , s , sum = 0;
 	int N = (nx + 1) * (ny + 1);
 	k1 = k*N / p;
 	k2 = (k + 1)* N / p ;
 	
 	for(int  l = k1; l < k2; l++){
-		s = get_offdiag_elem(nx , ny , l, a + l , a + I[l] , I + I[l]);
+		s = get_offdiag_elem(nx , ny , l, a + l , a + I[l] , I + I[l] , b , par, f);
 		sum+=s;
 		// cout<<"thr: "<<k<< "L " << s <<" k"<< l<<endl;
 	}
-	cout<<"N "<<N<<" "<<sum<<" "<<k1<<" "<<k2<<endl;
+	//cout<<"N "<<N<<" "<<sum<<" "<<k1<<" "<<k2<<endl;
 
 	reduce_sum( p , &sum);
 	//pthread_barrier_wait(&barrier);
 	
-	cout<<"ASSSERT "<<sum<<" "<<I[N]<<" "<<N + 1 + sum<<endl;
+	//cout<<"ASSSERT "<<sum<<" "<<I[N]<<" "<<N + 1 + sum<<endl;
 	assert( N + 1 + sum == I[N]);	
 }
 
@@ -356,43 +404,56 @@ void* msl_approx(void *in_arg) {
     const int N = (nx + 1)*(ny + 1);
     const int p = arg.p;
     const int thr_ind = arg.thr_ind;
+	parral& par = *(arg.par);
+	const double hx = par.hx , hy = par.hy;
+	
+	double (*f)(double,double) = arg.f;
 
-    double *&A = *arg.A , *b = arg.b;
+
+    double *&A = *arg.A , *&b = *arg.b;
     int* err = arg.error , *&I = *arg.I;
 	
     cout<<p<<endl;
 	int l = thr_ind;
+	
 	if(thr_ind == 0) {
-		cout<<"Im in "<<endl;
+		//cout<<"Im in "<<endl;
 		if(allocate_MSR_matrix(nx, ny, A, I)!= 0){
-			cout << thr_ind << ": " << I << "\n";
-			cout<<"very bad"<<endl;
+			//cout << thr_ind << ": " << I << "\n";
+			//cout<<"very bad"<<endl;
 			*err = - 1;
 		}
-		cout<<"Im out"<<endl;
+		b = new double[N];
 	}
 	
 	
 	reduce_sum(p);
 	
 	//pthread_barrier_wait(&barrier);
-	cout<<"Thread: "<<thr_ind<<endl;
+	//cout<<"Thread: "<<thr_ind<<endl;
 	
-	cout<<l<<endl;
+	//cout<<l<<endl;
 	
 	/*if(*err == -1){
 		cout<<"ERRORRRR"<<endl;
 		return 0;
 	}*/
 	
-	cout<<"Ready to built"<<endl;
-	build_MSR_matrix(nx , ny , A , I, p, thr_ind);
+	//cout<<"Ready to built"<<endl;
+	build_MSR_matrix(nx , ny , A , I, b, p, thr_ind , par, f);
 	
 	reduce_sum(p);
 	if(thr_ind == 0){
-		//print_MSR_matrix(A,I,N);
+		cout<<"SPARCE MATRIX"<<endl;
 		print_matrix(N , A, I);
-		//cout<< l<<endl;
+		//cout<<"HH"<<hx<<" "<<hy<<endl;
+		cout<<endl<<"Vector b: "<<endl;
+		print_vector(b , N); 
+		
+		
+		delete[] I;
+		delete[] A;
+		delete[] b;
 	}
 	
 	
