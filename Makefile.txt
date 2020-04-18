@@ -1,0 +1,12 @@
+CXX := g++
+CXXFLAGS := -std=c++17 -Wall
+RM := del
+
+a: main.o assert.o optional.o
+	$(CXX) $^ -o $@
+	
+%.o: %.cpp *.hpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+	
+clean:
+	$(RM) *.o *.exe
