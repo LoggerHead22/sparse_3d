@@ -357,14 +357,15 @@ void* msl_approx(void *in_arg) {
     const int p = arg.p;
     const int thr_ind = arg.thr_ind;
 
-    double *A = arg.A , *b = arg.b;
-    int* err = arg.error , *I = arg.I;
+    double *&A = *arg.A , *b = arg.b;
+    int* err = arg.error , *&I = *arg.I;
 	
     cout<<p<<endl;
 	int l = thr_ind;
 	if(thr_ind == 0) {
 		cout<<"Im in "<<endl;
 		if(allocate_MSR_matrix(nx, ny, A, I)!= 0){
+			cout << thr_ind << ": " << I << "\n";
 			cout<<"very bad"<<endl;
 			*err = - 1;
 		}

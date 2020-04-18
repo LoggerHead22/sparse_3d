@@ -40,7 +40,7 @@ void print_MSR_matrix(double * A , int * I, int N );
 
 
 struct Arg{
-        int nx, ny ,m, p, thr_ind ,*error , *I;
-        double * A,*b , *x, time_thr, fulltime, n_err , *xs , *ys;
+        int nx, ny ,m, p, thr_ind ,*error , **I;
+        double **A,*b , *x, time_thr, fulltime, n_err , *xs , *ys;
 		double hx , hy;
 };

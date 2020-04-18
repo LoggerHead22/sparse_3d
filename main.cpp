@@ -22,7 +22,7 @@ int main( ){
     pthread_t *tids;
     Arg *args;
 
-    int nx = 3 , ny = 3 , p =2, *error;
+    int nx = 3 , ny = 3 , p = 3, *error;
 
 
 	
@@ -35,9 +35,9 @@ int main( ){
     for(int i=0;i<p;i++){
         args[i].p=p;
         args[i].thr_ind=i;
-        args[i].A=a;
+        args[i].A=&a;
         args[i].b=b;
-		args[i].I=I;
+		args[i].I=&I;
         args[i].x=x;
         args[i].error=error;
 		args[i].nx = nx;
