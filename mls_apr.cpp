@@ -93,18 +93,7 @@ void print_vector(double* m, int size) {
 
 
 
-void matr_mult_vector(double *A, int *I, int M, double *x, double *b, int k, int p)
-{
-    int begin = k*(M/p) + (k < M%p? k : 0);
-    int end = begin + M/p + (k < M%p? 1 : 0);
-    for(int i = begin; i < end; i++)
-    {
-//        printf("%lf\n", A[i]*x[i]);
-        b[i] = A[i]*x[i];
-        for(int j = I[i]; j < I[i+1]; j++)
-            b[i] += A[j]*x[I[j]];
-    }
-}
+
 
 int get_k(int nx , int ny , int i , int j){
 	return i*(ny + 1) + j;
@@ -412,8 +401,9 @@ void* msl_approx(void *in_arg) {
 
     double *&A = *arg.A , *&b = *arg.b;
     int* err = arg.error , *&I = *arg.I;
+	double *x = arg.x, *u = arg.u , *v = arg.v , *r = arg.r , *buf = arg.buf;
 	
-    cout<<p<<endl;
+
 	int l = thr_ind;
 	
 	if(thr_ind == 0) {
@@ -443,13 +433,52 @@ void* msl_approx(void *in_arg) {
 	build_MSR_matrix(nx , ny , A , I, b, p, thr_ind , par, f);
 	
 	reduce_sum(p);
-	if(thr_ind == 0){
-		cout<<"SPARCE MATRIX"<<endl;
-		print_matrix(N , A, I);
-		//cout<<"HH"<<hx<<" "<<hy<<endl;
-		cout<<endl<<"Vector b: "<<endl;
-		print_vector(b , N); 
+	
+	//ITERATION PART 
+	
+	double b_norm = scalar_prod(b,b,buf,p,thr_ind,N);
+	
+	int iter_count = 0;
+	bool not_solved = true;
+	int temp;
+	
+	
+	while(not_solved){
+	
+		temp = one_solve_step(A,I, x , b,u,v,r,buf, N, b_norm , p , thr_ind);
+	
+		if(temp == -1){
+			iter_count+=MAX_ITER_STEP;
+		}else{
+			iter_count+=temp;
+			break;
+		}
 		
+		
+		if(iter_count>MAX_ITER){
+			cout<<"SORRY, the number of iterations exceeded : "<<iter_count<<endl;
+			iter_count=-1;
+			break;
+		}
+		
+	
+	}
+	
+	
+	
+	//OUTPUT PART 
+	if(thr_ind == 0){
+		if(iter_count > 0){
+			cout<<"SPARCE MATRIX"<<endl;
+			print_matrix(N , A, I);
+			//cout<<"HH"<<hx<<" "<<hy<<endl;
+			cout<<endl<<"Vector b: "<<endl;
+			print_vector(b , N);
+			cout<<endl<<"Vector x: "<<endl;
+			print_vector(x , N); 
+			
+			cout<<"ITER_COUNT: "<<iter_count<<endl;
+		}
 		
 		delete[] I;
 		delete[] A;
@@ -459,6 +488,104 @@ void* msl_approx(void *in_arg) {
 	
 	return 0 ;
 }
+
+
+void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , int N)
+{
+    int begin = k*(N/p) + (k < N%p? k : 0);
+    int end = begin + N/p + (k < N%p? 1 : 0);
+    for(int i = begin; i < end; i++)
+    {
+//        printf("%lf\n", A[i]*x[i]);
+        b[i] = A[i]*x[i];
+        for(int j = I[i]; j < I[i+1]; j++)
+            b[i] += A[j]*x[I[j]];
+    }
+	
+	
+}
+
+
+
+void linear_comb(double * x , double *y , double tau , double p , int k , int N){
+	int begin = k*N / p;
+	int end = (k+1)*N / p;
+	
+	
+	for(int i = begin; i < end; i++){
+		x[i]-=tau*y[i];
+	}
+	
+}
+
+double scalar_prod(double *x , double *y , double  *buf , double p , int k , int N){
+	int begin = k*N / p;
+	int end = (k+1)*N / p;
+	
+	double s = 0;
+	
+	for(int i = begin; i < end; i++){
+		s +=x[i]*y[i];
+	}
+	buf[k]=s;
+	reduce_sum(p);
+	
+	s = 0;
+	
+	for(int i = 0; i < p;i++){
+		s+=buf[i];
+	}
+	
+	return s;
+}
+
+
+void Jakobi(double *A , double *r , double *v , int p , int k, int N){
+	int begin = k*N / p;
+	int end = (k+1)*N / p;
+	
+	for(int i = begin; i < end; i++){
+		v[i] = r[i] / A[i];
+	}
+	
+	reduce_sum(p);
+}
+
+
+
+int one_solve_step(double *A , int *I , double *x , double *b , double * u , double *v, double *r , double *buf, int N,double b_norm,  int p,int k){
+	
+	int i;
+	double c1 , c2 , tau;
+	
+	matr_mult_vector(A,I ,x,r ,p,k,N);
+	linear_comb(r , b , 1, p , k , N);
+	
+	for( i = 0 ; i <MAX_ITER_STEP ; i++){
+		
+		Jakobi(A,r,v,p,k,N);
+		matr_mult_vector(A,I ,v,u ,p,k,N); 
+		reduce_sum(p);
+	
+		c1 = scalar_prod(u,r,buf,p,k,N);
+		c2 = scalar_prod(u,u,buf,p,k,N);
+	
+		if(c1 < EPS*EPS*b_norm || c2 < EPS*EPS*b_norm ){
+			return i;
+		}
+		tau = c1/c2;
+		
+		linear_comb(x , v , tau, p , k , N);
+		linear_comb(r , u , tau, p , k , N);
+		
+		reduce_sum(p);
+	}
+	
+	return -1;
+}
+
+
+
 
 /*
 double get_time(){

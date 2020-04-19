@@ -16,6 +16,10 @@ using namespace std;
 #define LOG(...) std::cout<< #__VA_ARGS__<< " = " <<(__VA_ARGS__)<< "\n"
 #define LN       std::cout << "\n";
 
+#define MAX_ITER 10000
+#define MAX_ITER_STEP 50
+
+
 static pthread_barrier_t barrier;
 
 
@@ -64,7 +68,14 @@ public:
 
 
 void coord_trans( double x, double y, double &x_ , double &y_);
-void matr_mult_vector(double *A, int *I, int M, double *x, double *b, int k, int p);
+void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , int N);
+void linear_comb(double * x , double *y , double tau , double p , int k , int N);
+double scalar_prod(double * x , double *y , double  *buf , double p , int k , int N);
+void Jakobi(double *A , double *r , double *v , int p , int k, int N);
+int one_solve_step(double *A , int *I , double *x ,  double *b , double * u , double *v, double *r , double *buf, int N,double b_norm,  int p,int k);
+
+
+
 int get_k(int nx , int ny , int i , int j);
 void get_ij(int nx, int ny, int k, int &i , int &j);
 int get_num_offdiag(int nx, int ny, int k);
@@ -90,7 +101,7 @@ void print_MSR_matrix(double * A , int * I, int N );
 
 struct Arg{
         int nx, ny ,m, p, thr_ind ,*error , **I;
-        double **A,**b , *x, time_thr, fulltime, n_err , *xs , *ys;
+        double **A,**b , *x, *u , *v , *buf , *r , time_thr, fulltime, n_err , *xs , *ys;
 		double hx , hy;
 		double (*f)(double,double);
 		parral* par;
