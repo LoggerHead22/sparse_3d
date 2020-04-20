@@ -146,7 +146,6 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	double hx = par.hx, hy = par.hy;
 	get_ij(nx,ny,k,i,j);
 	
-	
 	#define I(x,y) get_k(nx , ny, x , y)
 	
 	#define _36_1 par.f_par(par.xs[i] , par.ys[j] ,f)
@@ -175,11 +174,11 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	
 	if( i >=1 && i <=nx -1 && j>=1 && j<=ny - 1){
 		*a_diag = 0.5*hx*hy;
-		 I[0] = I(i,j-1);   a[0] = 1./12*hx*hy;
-		 I[1] = I(i,j+1);   a[1] = 1./12*hx*hy;
-		 I[2] = I(i-1,j);   a[2] = 1./12*hx*hy;
-		 I[3] = I(i+1,j);   a[3] = 1./12*hx*hy;
-		 I[4] = I(i-1,j-1); a[4] = 1./12*hx*hy;
+		 I[0] = I(i-1,j-1); a[0] = 1./12*hx*hy;
+		 I[1] = I(i-1,j);   a[1] = 1./12*hx*hy;
+		 I[2] = I(i,j-1);   a[2] = 1./12*hx*hy;
+		 I[3] = I(i,j+1);   a[3] = 1./12*hx*hy;
+		 I[4] = I(i+1,j);   a[4] = 1./12*hx*hy;
 		 I[5] = I(i+1,j+1); a[5] = 1./12*hx*hy;
 		 b[I(i,j)] = (36*_36_1 + 
 				20*(_20_1 + _20_2 + _20_3 +  _20_4 + _20_5 + _20_6)+
@@ -190,8 +189,8 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	}
 	else if( (i >=1 && i <=nx -1 && j==0)){
 		*a_diag = 0.25*hx*hy;
-		I[0] = I(i,j+1);   a[0] = 1./12*hx*hy;
-		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
+		I[0] = I(i-1,j);   a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1);   a[1] = 1./12*hx*hy;
 		I[2] = I(i+1,j);   a[2] = 1./24*hx*hy;
 		I[3] = I(i+1,j+1); a[3] = 1./12*hx*hy;
 		b[I(i,j)] = (18*_36_1 + 20*(_20_1 + _20_2) + 10*(_20_6 + _20_3) +
@@ -199,58 +198,58 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 		return 4;
 	}else if( (i >=1 && i <=nx -1 && j==ny)){
 		*a_diag = 0.25*hx*hy;
-		I[0] = I(i,j-1);   a[0] = 1./12*hx*hy;
-		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
-		I[2] = I(i+1,j);   a[2] = 1./12*hx*hy;
-		I[3] = I(i-1,j-1); a[3] = 1./24*hx*hy;
+		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy;
+		I[1] = I(i-1,j);     a[1] = 1./24*hx*hy;
+		I[2] = I(i,j-1);     a[2] = 1./12*hx*hy;
+		I[3] = I(i+1,j);   a[3] = 1./24*hx*hy;
 		b[I(i,j)] = (18*_36_1 + 20*(_20_5 + _20_4) + 10*(_20_6 + _20_3) +
 					+ 4*(_4_5 + _4_4 + _4_3) + 2*(_2_5 + _2_4) + 1*(_2_6 + _2_3))*hx*hy/192;
 		return 4;
 	}else if( (i ==0 && j >=1 && j<=ny-1)){
 		*a_diag = 0.25*hx*hy;
-		I[0] = I(i,j-1);  a[0] = 1./24*hx*hy;
-		I[1] = I(i,j+1);  a[1] = 1./12*hx*hy;
-		I[2] = I(i+1,j);  a[2] = 1./12*hx*hy;
-		I[3] = I(i+1,j+1);a[3] = 1./24*hx*hy;
+		I[0] = I(i,j-1);     a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1);     a[1] = 1./24*hx*hy;
+		I[2] = I(i+1,j);     a[2] = 1./12*hx*hy;
+		I[3] = I(i+1,j+1);   a[3] = 1./12*hx*hy;
 		b[I(i,j)] = (18*_36_1 + 20*(_20_2 + _20_3) + 10*(_20_1 + _20_4) +
 					+ 4*(_4_1 + _4_2 + _4_3) + 2*(_2_2 + _2_3) + 1*(_2_1 + _2_4))*hx*hy/192;
 		return 4; 
 	}else if( (i ==nx && j>=1 && j <= ny - 1)){
 		*a_diag = 0.25*hx*hy;
-		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy;
-		I[1] = I(i,j+1);   a[1] = 1./24*hx*hy;
-		I[2] = I(i-1,j);   a[2] = 1./12*hx*hy;
-		I[3] = I(i-1,j-1); a[3] = 1./12*hx*hy;
+		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy;
+		I[1] = I(i-1,j);     a[1] = 1./12*hx*hy;
+		I[2] = I(i,j-1);     a[2] = 1./24*hx*hy;
+		I[3] = I(i,j+1);     a[3] = 1./24*hx*hy;
 		b[I(i,j)] = (18*_36_1 + 20*(_20_5 + _20_6) + 10*(_20_1 + _20_4) +
 					+ 4*(_4_4 + _4_5 + _4_6) + 2*(_2_5 + _2_6) + 1*(_2_1 + _2_4))*hx*hy/192;
 		return 4;
 	}else if (i==0 && j==0){
 		*a_diag = 1./6*hx*hy;
-		I[0] = I(i+1,j);   a[0] = 1./24*hx*hy;
-		I[1] = I(i,j+1);   a[1] = 1./24*hx*hy;
+		I[0] = I(i,j+1);   a[0] = 1./24*hx*hy;
+		I[1] = I(i+1,j);   a[1] = 1./24*hx*hy;
 		I[2] = I(i+1,j+1); a[2] = 1./12*hx*hy;
 		b[I(i,j)] = (12*_36_1 + 20*(_20_2) + 10*(_20_1 + _20_3) +
 					+ 4*(_4_1 + _4_2) + 2*(_2_2) + 1*(_2_1 + _2_3))*hx*hy/192;
 		return 3;	
 	}else if (i==nx && j==ny){
 		*a_diag = 1./6*hx*hy;
-		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy; 
-		I[1] = I(i-1,j);   a[1] = 1./24*hx*hy;
-		I[2] = I(i-1,j-1); a[2] = 1./12*hx*hy;
+		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy; 
+		I[1] = I(i-1,j);     a[1] = 1./24*hx*hy;
+		I[2] = I(i,j-1);     a[2] = 1./24*hx*hy;
 		b[I(i,j)] = (12*_36_1 + 20*(_20_5) + 10*(_20_4 + _20_6) +
 					+ 4*(_4_4 + _4_5) + 2*(_2_5) + 1*(_2_4 + _2_6))*hx*hy/192;
 		return 3;
 	}else if (i==nx && j==0){
 		*a_diag = 1./12*hx*hy;
-		I[0] = I(i,j+1); a[0] = 1./24*hx*hy;
-		I[1] = I(i-1,j); a[1] = 1./24*hx*hy;
+		I[0] = I(i-1,j); a[0] = 1./24*hx*hy;
+		I[1] = I(i,j+1); a[1] = 1./24*hx*hy;
 		b[I(i,j)] = (6*_36_1 + 10*(_20_1 + _20_6) +
 					+ 4*(_4_6) +  1*(_2_1 + _2_6))*hx*hy/192;
 		return 2;
 	}else if (i==0 && j==ny){
 		*a_diag = 1./12*hx*hy;
-		I[0] = I(i,j-1);   a[0] = 1./24*hx*hy;
-		I[1] = I(i + 1,j); a[1] = 1./24*hx*hy;
+		I[0] = I(i , j-1);   a[0] = 1./24*hx*hy;
+		I[1] = I(i + 1,j);   a[1] = 1./24*hx*hy;
 		b[I(i,j)] = (6*_36_1 + 10*(_20_3 + _20_4) +
 					+ 4*(_4_3) +  1*(_2_3 + _2_4))*hx*hy/192;
 		return 2;
@@ -414,11 +413,12 @@ void* msl_approx(void *in_arg) {
 			*err = - 1;
 		}
 		b = new double[N];
+		memset(b,0,N*sizeof(double));
 	}
 	
 	
 	reduce_sum(p);
-	
+
 	//pthread_barrier_wait(&barrier);
 	//cout<<"Thread: "<<thr_ind<<endl;
 	
@@ -433,7 +433,19 @@ void* msl_approx(void *in_arg) {
 	build_MSR_matrix(nx , ny , A , I, b, p, thr_ind , par, f);
 	
 	reduce_sum(p);
+
 	
+	
+	
+	if(thr_ind == 0){
+		cout<<"SPARCE MATRIX"<<endl;
+		print_matrix(N , A, I);
+		//cout<<"HH"<<hx<<" "<<hy<<endl;
+		cout<<endl<<"Vector b: "<<endl;
+		print_vector(b , N);
+	}
+		
+		
 	//ITERATION PART 
 	
 	double b_norm = scalar_prod(b,b,buf,p,thr_ind,N);
@@ -442,9 +454,15 @@ void* msl_approx(void *in_arg) {
 	bool not_solved = true;
 	int temp;
 	
+	int begin = thr_ind*N / p;
+	int end = (thr_ind+1)*N / p;
+	
+	//int begin = thr_ind*(N/p) + (thr_ind < N%p? thr_ind : 0);
+	//int end = begin + N/p + (thr_ind < N%p? 1 : 0);
+	//printf("Thread %d , beg: %d , end: %d \n",thr_ind , begin , end);
+	
 	
 	while(not_solved){
-	
 		temp = one_solve_step(A,I, x , b,u,v,r,buf, N, b_norm , p , thr_ind);
 	
 		if(temp == -1){
@@ -467,17 +485,15 @@ void* msl_approx(void *in_arg) {
 	
 	
 	//OUTPUT PART 
+	
+	
+	
 	if(thr_ind == 0){
 		if(iter_count > 0){
-			cout<<"SPARCE MATRIX"<<endl;
-			print_matrix(N , A, I);
-			//cout<<"HH"<<hx<<" "<<hy<<endl;
-			cout<<endl<<"Vector b: "<<endl;
-			print_vector(b , N);
 			cout<<endl<<"Vector x: "<<endl;
 			print_vector(x , N); 
 			
-			cout<<"ITER_COUNT: "<<iter_count<<endl;
+			cout<<"\nITER_COUNT: "<<iter_count<<endl;
 		}
 		
 		delete[] I;
@@ -485,6 +501,9 @@ void* msl_approx(void *in_arg) {
 		delete[] b;
 	}
 	
+	reduce_sum(p);
+	
+	printf("Thread %d is out\n",thr_ind);
 	
 	return 0 ;
 }
@@ -492,8 +511,11 @@ void* msl_approx(void *in_arg) {
 
 void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , int N)
 {
-    int begin = k*(N/p) + (k < N%p? k : 0);
-    int end = begin + N/p + (k < N%p? 1 : 0);
+    //int begin = k*(N/p) + (k < N%p? k : 0);
+    //int end = begin + N/p + (k < N%p? 1 : 0);
+	
+	int begin = k*N / p;
+	int end = (k+1)*N / p;
     for(int i = begin; i < end; i++)
     {
 //        printf("%lf\n", A[i]*x[i]);
@@ -507,10 +529,11 @@ void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , in
 
 
 
-void linear_comb(double * x , double *y , double tau , double p , int k , int N){
+void linear_comb(double * x , double *y , double tau , int p , int k , int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
-	
+	//int begin = k*(N/p) + (k < N%p? k : 0);
+    //int end = begin + N/p + (k < N%p? 1 : 0);
 	
 	for(int i = begin; i < end; i++){
 		x[i]-=tau*y[i];
@@ -518,9 +541,13 @@ void linear_comb(double * x , double *y , double tau , double p , int k , int N)
 	
 }
 
-double scalar_prod(double *x , double *y , double  *buf , double p , int k , int N){
+double scalar_prod(const double *x , const double *y , double  *buf , int p , int k , int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
+	
+	//int begin = k*(N/p) + (k < N%p? k : 0);
+    //int end = begin + N/p + (k < N%p? 1 : 0);
+	
 	
 	double s = 0;
 	
@@ -544,6 +571,10 @@ void Jakobi(double *A , double *r , double *v , int p , int k, int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
 	
+	//int begin = k*(N/p) + (k < N%p? k : 0);
+    //int end = begin + N/p + (k < N%p? 1 : 0);
+	
+	
 	for(int i = begin; i < end; i++){
 		v[i] = r[i] / A[i];
 	}
@@ -559,9 +590,12 @@ int one_solve_step(double *A , int *I , double *x , double *b , double * u , dou
 	double c1 , c2 , tau;
 	
 	matr_mult_vector(A,I ,x,r ,p,k,N);
-	linear_comb(r , b , 1, p , k , N);
 	
-	for( i = 0 ; i <MAX_ITER_STEP ; i++){
+	
+	linear_comb(r , b , 1, p , k , N);
+	reduce_sum(p);
+	
+	for( i = 1 ; i <MAX_ITER_STEP ; i++){
 		
 		Jakobi(A,r,v,p,k,N);
 		matr_mult_vector(A,I ,v,u ,p,k,N); 

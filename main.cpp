@@ -17,16 +17,22 @@ double f_4(double x, double y){
 
 
 
-int main( ){
-	parral par(2 , 3 , 30 , 0.2, 3, 3);
+int main( int argc , char** argv){
+	parral par(6 , 3 , 30 , 0.2, 3, 3);
 
 	double *a, *b, *x , *v , *u , *r , *buf ;
 	int * I;
     pthread_t *tids;
     Arg *args;
 
-    int nx = 3 , ny = 3 , p = 16, *error;
+    int nx = 3 , ny = 3 , p = 1, *error;
 
+	if (!(argc == 2) || ((p = stoi(argv[1])) <= 0)) {
+            printf("usage: %s p \n ", argv[0]);
+	    return -1;
+	}
+	
+	
 	int N = (nx + 1)*(ny + 1);
 
 	
@@ -45,6 +51,8 @@ int main( ){
 	memset(v , 0 , N*sizeof(double));
 	memset(r , 0 , N*sizeof(double));
 	memset(buf , 0 , p*sizeof(double));
+
+
 
 	pthread_barrier_init (&barrier, nullptr, p);
 
