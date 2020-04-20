@@ -272,7 +272,7 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 	int k,l,s = 0;
 	int nz = get_non_zeros(nx , ny);
 	
-	cout<<"nz "<<nz<< " "<<nx <<" "<<ny<<endl;
+	//cout<<"nz "<<nz<< " "<<nx <<" "<<ny<<endl;
 	
 	int len = N + 1 +nz;
 	
@@ -393,7 +393,7 @@ void* msl_approx(void *in_arg) {
     const int p = arg.p;
     const int thr_ind = arg.thr_ind;
 	parral& par = *(arg.par);
-	const double hx = par.hx , hy = par.hy;
+
 	
 	double (*f)(double,double) = arg.f;
 
@@ -496,10 +496,57 @@ void* msl_approx(void *in_arg) {
 	
 	reduce_sum(p);
 	
-	printf("Thread %d is out\n",thr_ind);
+	double resid = residual_compute(x,par, f, buf, p , thr_ind , N);
+	
+	
+	if(thr_ind == 0){
+		cout<<"RESIDUAL : "<<resid<<endl;
+	}
+	
 	
 	return 0 ;
 }
+
+
+double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k , int N){
+	int ny = par.ny , nx = par.nx;
+	int begin = k*(nx+1) / p;
+	int end = (k+1)*(nx+1) / p;
+	
+
+	buf[k] = 0;
+	double resid = 0;
+	for(int i = begin ; i <end;i++){
+		if(i==nx){
+			for( int l = 0 ; l < ny - 1; l++){
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
+				//LOG(i);
+				//ELOG(abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
+				//ELOG(abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
+				//ELOG(abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
+			}
+		}else{
+			for( int l = 0 ; l < ny - 1; l++){
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
+				buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i+1,l+1)])/2 ));
+				buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l], f) - (x[I(i,l)] + x[I(i+1,l)])/2 ));
+				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
+				buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l+1], f) - (x[I(i,l+1)] + x[I(i+1,l+1)])/2));
+				buf[k] = max(buf[k] , abs(par.f_par((2*par.xs[i] + par.xs[i+1])/3 , (2*par.ys[l+1] + par.ys[l])/3, f) - (x[I(i,l+1)] + x[I(i+1,l+1)] + x[I(i,l)])/3));
+			}
+		}
+	}
+	
+	reduce_sum(p);
+	for(int i = 0 ; i < p; i++){
+		resid = max(resid, buf[i]);
+	}
+
+	return resid;
+}	
 
 
 void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , int N)

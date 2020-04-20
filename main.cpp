@@ -15,6 +15,11 @@ double f_4(double x, double y){
 	return x + y;
 }
 
+double f_5(double x, double y){
+	return x*y;
+}
+
+
 
 
 int main( int argc , char** argv){
@@ -95,7 +100,7 @@ int main( int argc , char** argv){
     printf("FULL TIME IS %f\n",TIME);
 
 	*/
-	cout<<"bue"<<endl;
+	//cout<<"bue"<<endl;
 	
 	
 
