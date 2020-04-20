@@ -23,14 +23,15 @@ double f_5(double x, double y){
 
 
 int main( int argc , char** argv){
-	parral par(6 , 3 , 30 , 0.2, 3, 3);
+	int nx = 10 , ny = 10 , p = 1, *error = new int(0);
+	parral par(6 , 3 , 30 , 0.2, nx, ny);
 
 	double *a, *b, *x , *v , *u , *r , *buf ;
 	int * I;
     pthread_t *tids;
     Arg *args;
 
-    int nx = 3 , ny = 3 , p = 1, *error;
+    
 
 	if (!(argc == 2) || ((p = stoi(argv[1])) <= 0)) {
             printf("usage: %s p \n ", argv[0]);
@@ -55,7 +56,7 @@ int main( int argc , char** argv){
 	memset(r , 0 , N*sizeof(double));
 	memset(buf , 0 , p*sizeof(double));
 
-	pthread_barrier_init (&barrier, nullptr, p);
+	// pthread_barrier_init (&barrier, nullptr, p);
 
     for(int i=0;i<p;i++){
         args[i].p=p;
@@ -71,7 +72,7 @@ int main( int argc , char** argv){
         args[i].error=error;
 		args[i].nx = par.nx;
 		args[i].ny = par.ny;
-		args[i].f = f_1;
+		args[i].f = f_5;
 		args[i].par = &par;
 	}
 
@@ -81,6 +82,13 @@ int main( int argc , char** argv){
     for(int i=0;i<p;i++){
            if(pthread_create(tids+i,0,&msl_approx,(void *) (args+i))){
                     printf("Cannot create thread %d\n",i);
+					delete[] tids;
+					delete[] args;
+					delete[] x;
+					delete[] u;
+					delete[] v;
+					delete[] r;
+					delete error;
                     abort();
             }
     }
@@ -111,6 +119,7 @@ int main( int argc , char** argv){
 	delete[] u;
 	delete[] v;
 	delete[] r;
+	delete error;
 	
 		
 	

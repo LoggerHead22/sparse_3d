@@ -21,7 +21,7 @@ using namespace std;
 #define MAX_ITER_STEP 50
 
 
-static pthread_barrier_t barrier;
+// static pthread_barrier_t barrier;
 
 
 struct parral{

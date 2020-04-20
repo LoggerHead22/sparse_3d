@@ -264,7 +264,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 }
 
 int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
-	double *a , *b;
+	double *a;
 	int *I;
 	
 	
@@ -402,8 +402,6 @@ void* msl_approx(void *in_arg) {
     int* err = arg.error , *&I = *arg.I;
 	double *x = arg.x, *u = arg.u , *v = arg.v , *r = arg.r , *buf = arg.buf;
 
-	int l = thr_ind;
-	
 	if(thr_ind == 0) {
 		//cout<<"Im in "<<endl;
 		if(allocate_MSR_matrix(nx, ny, A, I)!= 0){
@@ -449,11 +447,6 @@ void* msl_approx(void *in_arg) {
 	bool not_solved = true;
 	int temp;
 	
-	int begin = thr_ind*N / p;
-	int end = (thr_ind+1)*N / p;
-	
-
-
 	reduce_sum(p);
 	while(not_solved){
 		temp = one_solve_step(A,I, x , b,u,v,r,buf, N, b_norm , p , thr_ind);
