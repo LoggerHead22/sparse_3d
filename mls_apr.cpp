@@ -95,12 +95,12 @@ void print_vector(double* m, int size) {
 
 
 
-int get_k(int nx , int ny , int i , int j){
+int get_k(int /* nx */ , int ny , int i , int j){
 	return i*(ny + 1) + j;
 }	
 
 
-void get_ij(int nx, int ny, int k, int &i , int &j){
+void get_ij(int /* nx */, int ny, int k, int &i , int &j){
 	i = k / (ny + 1);
 	j = k - i*(ny + 1);
 }
@@ -417,12 +417,6 @@ void* msl_approx(void *in_arg) {
 	reduce_sum(p);
 
 
-	/*if(*err == -1){
-		cout<<"ERRORRRR"<<endl;
-		return 0;
-	}*/
-	
-
 	build_MSR_matrix(nx , ny , A , I, b, p, thr_ind , par, f);
 	reduce_sum(p);
 
@@ -489,7 +483,7 @@ void* msl_approx(void *in_arg) {
 	
 	reduce_sum(p);
 	
-	double resid = residual_compute(x,par, f, buf, p , thr_ind , N);
+	double resid = residual_compute(x,par, f, buf, p , thr_ind);
 	
 	
 	if(thr_ind == 0){
@@ -501,7 +495,7 @@ void* msl_approx(void *in_arg) {
 }
 
 
-double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k , int N){
+double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k){
 	int ny = par.ny , nx = par.nx;
 	int begin = k*(nx+1) / p;
 	int end = (k+1)*(nx+1) / p;

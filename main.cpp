@@ -19,12 +19,16 @@ double f_5(double x, double y){
 	return x*y;
 }
 
+double f_6(double x, double y){
+	return exp(x)*exp(y);
+}
+
 
 
 
 int main( int argc , char** argv){
-	int nx = 10 , ny = 10 , p = 1, *error = new int(0);
-	parral par(6 , 3 , 30 , 0.2, nx, ny);
+	int nx = 2000 , ny = 2000, p = 1, *error = new int(0);
+	parral par(6 , 3 , 90, 0.2, nx, ny);
 
 	double *a, *b, *x , *v , *u , *r , *buf ;
 	int * I;
@@ -72,7 +76,7 @@ int main( int argc , char** argv){
         args[i].error=error;
 		args[i].nx = par.nx;
 		args[i].ny = par.ny;
-		args[i].f = f_5;
+		args[i].f = f_6;
 		args[i].par = &par;
 	}
 

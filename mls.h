@@ -74,7 +74,7 @@ void linear_comb(double * x , double *y , double tau , int  p , int k , int N);
 double scalar_prod(const double * x , const double *y , double  *buf , int p , int k , int N);
 void Jakobi(double *A , double *r , double *v , int p , int k, int N);
 int one_solve_step(double *A , int *I , double *x ,  double *b , double * u , double *v, double *r , double *buf, int N,double b_norm,  int p,int k);
-double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k , int N);
+double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k);
 
 
 
