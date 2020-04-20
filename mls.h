@@ -14,6 +14,7 @@ using namespace std;
 #define EPS 1e-14
 
 #define LOG(...) std::cout<< #__VA_ARGS__<< " = " <<(__VA_ARGS__)<< "\n"
+#define ELOG(...) std::cout << "[" << __FILE__ << ":" << __LINE__ << "] " << #__VA_ARGS__<< " = " <<(__VA_ARGS__)<< "\n"
 #define LN       std::cout << "\n";
 
 #define MAX_ITER 10000

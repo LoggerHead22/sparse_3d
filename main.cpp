@@ -44,15 +44,11 @@ int main( int argc , char** argv){
 	v = new double[N];
 	r = new double[N];
 	
-	
-	
 	memset(x , 0 , N*sizeof(double));
 	memset(u , 0 , N*sizeof(double));
 	memset(v , 0 , N*sizeof(double));
 	memset(r , 0 , N*sizeof(double));
 	memset(buf , 0 , p*sizeof(double));
-
-
 
 	pthread_barrier_init (&barrier, nullptr, p);
 

@@ -401,7 +401,6 @@ void* msl_approx(void *in_arg) {
     double *&A = *arg.A , *&b = *arg.b;
     int* err = arg.error , *&I = *arg.I;
 	double *x = arg.x, *u = arg.u , *v = arg.v , *r = arg.r , *buf = arg.buf;
-	
 
 	int l = thr_ind;
 	
@@ -415,23 +414,18 @@ void* msl_approx(void *in_arg) {
 		b = new double[N];
 		memset(b,0,N*sizeof(double));
 	}
-	
+
 	
 	reduce_sum(p);
 
-	//pthread_barrier_wait(&barrier);
-	//cout<<"Thread: "<<thr_ind<<endl;
-	
-	//cout<<l<<endl;
-	
+
 	/*if(*err == -1){
 		cout<<"ERRORRRR"<<endl;
 		return 0;
 	}*/
 	
-	//cout<<"Ready to built"<<endl;
+
 	build_MSR_matrix(nx , ny , A , I, b, p, thr_ind , par, f);
-	
 	reduce_sum(p);
 
 	
@@ -444,11 +438,12 @@ void* msl_approx(void *in_arg) {
 		cout<<endl<<"Vector b: "<<endl;
 		print_vector(b , N);
 	}
-		
+
 		
 	//ITERATION PART 
 	
 	double b_norm = scalar_prod(b,b,buf,p,thr_ind,N);
+	
 	
 	int iter_count = 0;
 	bool not_solved = true;
@@ -457,11 +452,9 @@ void* msl_approx(void *in_arg) {
 	int begin = thr_ind*N / p;
 	int end = (thr_ind+1)*N / p;
 	
-	//int begin = thr_ind*(N/p) + (thr_ind < N%p? thr_ind : 0);
-	//int end = begin + N/p + (thr_ind < N%p? 1 : 0);
-	//printf("Thread %d , beg: %d , end: %d \n",thr_ind , begin , end);
-	
-	
+
+
+	reduce_sum(p);
 	while(not_solved){
 		temp = one_solve_step(A,I, x , b,u,v,r,buf, N, b_norm , p , thr_ind);
 	
@@ -478,9 +471,9 @@ void* msl_approx(void *in_arg) {
 			iter_count=-1;
 			break;
 		}
-		
 	
 	}
+
 	
 	
 	
@@ -511,14 +504,12 @@ void* msl_approx(void *in_arg) {
 
 void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , int N)
 {
-    //int begin = k*(N/p) + (k < N%p? k : 0);
-    //int end = begin + N/p + (k < N%p? 1 : 0);
-	
+
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
     for(int i = begin; i < end; i++)
     {
-//        printf("%lf\n", A[i]*x[i]);
+
         b[i] = A[i]*x[i];
         for(int j = I[i]; j < I[i+1]; j++)
             b[i] += A[j]*x[I[j]];
@@ -532,9 +523,7 @@ void matr_mult_vector(double *A, int *I, double *x, double *b, int p, int k , in
 void linear_comb(double * x , double *y , double tau , int p , int k , int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
-	//int begin = k*(N/p) + (k < N%p? k : 0);
-    //int end = begin + N/p + (k < N%p? 1 : 0);
-	
+
 	for(int i = begin; i < end; i++){
 		x[i]-=tau*y[i];
 	}
@@ -544,11 +533,7 @@ void linear_comb(double * x , double *y , double tau , int p , int k , int N){
 double scalar_prod(const double *x , const double *y , double  *buf , int p , int k , int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
-	
-	//int begin = k*(N/p) + (k < N%p? k : 0);
-    //int end = begin + N/p + (k < N%p? 1 : 0);
-	
-	
+
 	double s = 0;
 	
 	for(int i = begin; i < end; i++){
@@ -571,10 +556,7 @@ void Jakobi(double *A , double *r , double *v , int p , int k, int N){
 	int begin = k*N / p;
 	int end = (k+1)*N / p;
 	
-	//int begin = k*(N/p) + (k < N%p? k : 0);
-    //int end = begin + N/p + (k < N%p? 1 : 0);
-	
-	
+
 	for(int i = begin; i < end; i++){
 		v[i] = r[i] / A[i];
 	}
@@ -602,7 +584,9 @@ int one_solve_step(double *A , int *I , double *x , double *b , double * u , dou
 		reduce_sum(p);
 	
 		c1 = scalar_prod(u,r,buf,p,k,N);
+		reduce_sum(p);
 		c2 = scalar_prod(u,u,buf,p,k,N);
+
 	
 		if(c1 < EPS*EPS*b_norm || c2 < EPS*EPS*b_norm ){
 			return i;
