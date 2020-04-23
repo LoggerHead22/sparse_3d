@@ -16,7 +16,7 @@ double f_4(double x, double y){
 }
 
 double f_5(double x, double y){
-	return x*y;
+	return x*y + x*x ;
 }
 
 double f_6(double x, double y){
@@ -27,8 +27,8 @@ double f_6(double x, double y){
 
 
 int main( int argc , char** argv){
-	int nx = 2000 , ny = 2000, p = 1, *error = new int(0);
-	parral par(6 , 3 , 90, 0.2, nx, ny);
+	int nx = 1024 , ny = 1024, p = 1, *error = new int(0);
+	parral par(3 , 3 , 90, 0.9 , nx, ny);
 
 	double *a, *b, *x , *v , *u , *r , *buf ;
 	int * I;
@@ -43,8 +43,9 @@ int main( int argc , char** argv){
 	}
 	
 	
-	int N = (nx + 1)*(ny + 1);
+	int N = (nx + 1)*(ny + 1) - par.nx_rect*par.ny_rect;
 
+	cout<<par.nx<<" "<<par.ny<<" "<<par.nx_rect<<" "<<par.ny_rect<<endl;
 	
     tids= new pthread_t[p];
     args= new Arg[p];
@@ -76,7 +77,7 @@ int main( int argc , char** argv){
         args[i].error=error;
 		args[i].nx = par.nx;
 		args[i].ny = par.ny;
-		args[i].f = f_6;
+		args[i].f = f_4;
 		args[i].par = &par;
 	}
 

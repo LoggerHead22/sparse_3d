@@ -95,30 +95,40 @@ void print_vector(double* m, int size) {
 
 
 
-int get_k(int /* nx */ , int ny , int i , int j){
-	return i*(ny + 1) + j;
+int get_k(int  nx  , int ny ,int nx_rect, int ny_rect, int i , int j){
+	
+	return (i <= nx - nx_rect ? i*(ny + 1) + j: (nx + 1 - nx_rect)*(ny + 1) + (i - (nx + 1 - nx_rect))*(ny + 1- ny_rect) + j);
 }	
 
 
-void get_ij(int /* nx */, int ny, int k, int &i , int &j){
-	i = k / (ny + 1);
-	j = k - i*(ny + 1);
+void get_ij(int  nx , int ny, int nx_rect , int ny_rect , int k, int &i , int &j){
+	if(k < (ny+1)*(nx + 1 - nx_rect)){
+		i = k / (ny + 1);
+		j = k - i*(ny + 1);
+	}else{
+		int l =(k - (ny + 1)*(nx + 1 - nx_rect));
+		i = (nx + 1 - nx_rect) +  l / (ny + 1 - ny_rect);
+		j = l - (i - (nx + 1 - nx_rect))*(ny + 1 - ny_rect);
+	}
 }
 
-int get_num_offdiag(int nx, int ny, int k){
+int get_num_offdiag(int nx, int ny,int nx_rect , int ny_rect , int k){
 	int i,j;
-	get_ij(nx,ny,k,i,j);
+	get_ij(nx,ny, nx_rect , ny_rect , k,i,j);
 
-	if( i >=1 && i <=nx -1 && j>=1 && j<=ny - 1){
+	if( i >=1 && j>=1 && ((i < nx - nx_rect && j < ny)||( i<=nx -1 && j< ny - ny_rect))){
 		return 6;
-	}
-	else if( (i >=1 && i <=nx -1) || (j >=1 && j <=ny-1)){
-		return  4;
-	}else if( (i ==0 && j ==0) || (i == nx && j ==ny)){
+	}else if( (i ==0 && j ==0) || (i == nx && j ==ny - ny_rect)|| (i==nx - nx_rect && j==ny)){
 		return  3;
+	}else if( i == nx - nx_rect && j== ny - ny_rect){
+		return 5;
 	}else if( (i ==0 && j ==ny) || (i == nx && j == 0)){
 		return 2;
+	}else if( (i >=1 && i <=nx -1) || (j >=1 && j <=ny-1)){
+		return  4;
 	}
+	
+	cout<<k<<" "<<i<<" "<<j<<endl;
 	cout<<"get_num_offdiag"<<endl;
 	
 	abort();
@@ -127,13 +137,14 @@ int get_num_offdiag(int nx, int ny, int k){
 }
 
 	
-int get_non_zeros(int nx, int ny){
-	int K = (nx + 1)*(ny + 1);
+int get_non_zeros(int nx, int ny , int nx_rect, int ny_rect){
+	int K = (nx + 1)*(ny + 1) - nx_rect*ny_rect;
 	
 	int nz = 0;
+	//LOG(K);
 	
 	for(int k = 0; k < K; k++){
-		nz += get_num_offdiag(nx,ny ,k);
+		nz += get_num_offdiag(nx,ny , nx_rect, ny_rect, k);
 		//cout<<"nz "<<nz<<endl;
 	}
 	return nz;
@@ -144,9 +155,11 @@ int get_non_zeros(int nx, int ny){
 int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int *I , double * b , parral &par , double (*f) (double,double)){
 	int i, j; 
 	double hx = par.hx, hy = par.hy;
-	get_ij(nx,ny,k,i,j);
+	int nx_rect = par.nx_rect , ny_rect = par.ny_rect;
 	
-	#define I(x,y) get_k(nx , ny, x , y)
+	get_ij(nx,ny, nx_rect, ny_rect, k,i,j);
+	
+	#define I(x,y) get_k(nx , ny, nx_rect, ny_rect, x , y)
 	
 	#define _36_1 par.f_par(par.xs[i] , par.ys[j] ,f)
 	
@@ -172,7 +185,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	#define _2_6  par.f_par(par.xs[i - 1] ,par.ys[j]    , f)
 	
 	
-	if( i >=1 && i <=nx -1 && j>=1 && j<=ny - 1){
+	if( i >=1 && j>=1 && ((i < nx - nx_rect && j < ny)||( i<=nx -1 && j< ny - ny_rect))){
 		*a_diag = 0.5*hx*hy;
 		 I[0] = I(i-1,j-1); a[0] = 1./12*hx*hy;
 		 I[1] = I(i-1,j);   a[1] = 1./12*hx*hy;
@@ -186,8 +199,26 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 				2*(_2_1 + _2_2 + _2_3 + _2_4 + _2_5 + _2_6) )* hx*hy /192;;
 				
 		return 6;
-	}
-	else if( (i >=1 && i <=nx -1 && j==0)){
+	}else if (i==nx && j==ny || i==nx && j==ny - ny_rect || i==nx - nx_rect && j ==ny){
+		*a_diag = 1./6*hx*hy;
+		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy; 
+		I[1] = I(i-1,j);     a[1] = 1./24*hx*hy;
+		I[2] = I(i,j-1);     a[2] = 1./24*hx*hy;
+		b[I(i,j)] = (12*_36_1 + 20*(_20_5) + 10*(_20_4 + _20_6) +
+					+ 4*(_4_4 + _4_5) + 2*(_2_5) + 1*(_2_4 + _2_6))*hx*hy/192;
+		return 3;
+	}else if(i == nx - nx_rect && j == ny - ny_rect){
+		*a_diag = 1./3*hx*hy;
+		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy;
+		I[1] = I(i-1,j);     a[1] = 1./12*hx*hy;
+		I[2] = I(i,j-1);     a[2] = 1./12*hx*hy;
+		I[3] = I(i,j+1);     a[3] = 1./24*hx*hy;
+		I[4] = I(i+1,j);     a[4] = 1./24*hx*hy;
+		b[I(i,j)] = (24*_36_1 + 20*(_20_4 + _20_5 + _20_6) + 10*(_20_1 + _20_3) +
+					+ 4*(_4_6 + _4_3 + _4_4 +  _4_5) + 2*(_2_4 + _2_5 + _2_6) + 1*(_2_1 + _2_3))*hx*hy/192;
+		return 5;
+		
+	}else if( (i >=1 && i <=nx -1 && j==0)){
 		*a_diag = 0.25*hx*hy;
 		I[0] = I(i-1,j);   a[0] = 1./24*hx*hy;
 		I[1] = I(i,j+1);   a[1] = 1./12*hx*hy;
@@ -196,7 +227,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 		b[I(i,j)] = (18*_36_1 + 20*(_20_1 + _20_2) + 10*(_20_6 + _20_3) +
 					+ 4*(_4_6 + _4_1 + _4_2) + 2*(_2_1 + _2_2) + 1*(_2_6 + _2_3))*hx*hy/192;
 		return 4;
-	}else if( (i >=1 && i <=nx -1 && j==ny)){
+	}else if( (i >=1 && i <=nx -1 && (j==ny || j== ny - ny_rect))){
 		*a_diag = 0.25*hx*hy;
 		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy;
 		I[1] = I(i-1,j);     a[1] = 1./24*hx*hy;
@@ -214,7 +245,7 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 		b[I(i,j)] = (18*_36_1 + 20*(_20_2 + _20_3) + 10*(_20_1 + _20_4) +
 					+ 4*(_4_1 + _4_2 + _4_3) + 2*(_2_2 + _2_3) + 1*(_2_1 + _2_4))*hx*hy/192;
 		return 4; 
-	}else if( (i ==nx && j>=1 && j <= ny - 1)){
+	}else if( ((i ==nx || i == nx - nx_rect) && j>=1 && j <= ny - 1)){
 		*a_diag = 0.25*hx*hy;
 		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy;
 		I[1] = I(i-1,j);     a[1] = 1./12*hx*hy;
@@ -231,14 +262,6 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 		b[I(i,j)] = (12*_36_1 + 20*(_20_2) + 10*(_20_1 + _20_3) +
 					+ 4*(_4_1 + _4_2) + 2*(_2_2) + 1*(_2_1 + _2_3))*hx*hy/192;
 		return 3;	
-	}else if (i==nx && j==ny){
-		*a_diag = 1./6*hx*hy;
-		I[0] = I(i-1,j-1);   a[0] = 1./12*hx*hy; 
-		I[1] = I(i-1,j);     a[1] = 1./24*hx*hy;
-		I[2] = I(i,j-1);     a[2] = 1./24*hx*hy;
-		b[I(i,j)] = (12*_36_1 + 20*(_20_5) + 10*(_20_4 + _20_6) +
-					+ 4*(_4_4 + _4_5) + 2*(_2_5) + 1*(_2_4 + _2_6))*hx*hy/192;
-		return 3;
 	}else if (i==nx && j==0){
 		*a_diag = 1./12*hx*hy;
 		I[0] = I(i-1,j); a[0] = 1./24*hx*hy;
@@ -263,14 +286,14 @@ int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int
 	
 }
 
-int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
+int allocate_MSR_matrix(int nx, int ny ,int nx_rect, int ny_rect,  double *&p_a , int *&p_I){
 	double *a;
 	int *I;
 	
 	
-	int N = (nx + 1)*(ny+1);
+	int N = (nx + 1)*(ny+1) - nx_rect*ny_rect;
 	int k,l,s = 0;
-	int nz = get_non_zeros(nx , ny);
+	int nz = get_non_zeros(nx , ny , nx_rect , ny_rect);
 	
 	//cout<<"nz "<<nz<< " "<<nx <<" "<<ny<<endl;
 	
@@ -287,7 +310,7 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 	I[0] = N + 1;
 	
 	for(k =1 ; k <=N; k++){
-		l = get_num_offdiag(nx , ny , k - 1);
+		l = get_num_offdiag(nx , ny ,nx_rect , ny_rect,  k - 1);
 		I[k] = I[k -1] + l;
 		s+=l;
 		//cout<<"L " << l <<" k"<<k -1<<endl;
@@ -305,7 +328,7 @@ int allocate_MSR_matrix(int nx, int ny , double *&p_a , int *&p_I){
 
 void build_MSR_matrix(int nx , int ny, double*a, int *I, double *b, int p , int k , parral &par , double (*f) (double,double)){
 	int k1 , k2 , s , sum = 0;
-	int N = (nx + 1) * (ny + 1);
+	int N = (nx + 1) * (ny + 1) - par.nx_rect*par.ny_rect;
 	k1 = k*N / p;
 	k2 = (k + 1)* N / p ;
 	
@@ -389,12 +412,17 @@ void* msl_approx(void *in_arg) {
   //  pthread_mutex_unlock(&mu);
     const int nx = arg.nx;
     const int ny = arg.ny;
-    const int N = (nx + 1)*(ny + 1);
+	
+
     const int p = arg.p;
     const int thr_ind = arg.thr_ind;
 	parral& par = *(arg.par);
 
+    const int nx_rect = par.nx_rect;
+    const int ny_rect = par.ny_rect;
 	
+	const int N = (nx + 1)*(ny + 1) - nx_rect*ny_rect;
+		
 	double (*f)(double,double) = arg.f;
 
 
@@ -404,7 +432,7 @@ void* msl_approx(void *in_arg) {
 
 	if(thr_ind == 0) {
 		//cout<<"Im in "<<endl;
-		if(allocate_MSR_matrix(nx, ny, A, I)!= 0){
+		if(allocate_MSR_matrix(nx, ny,nx_rect , ny_rect, A, I)!= 0){
 			//cout << thr_ind << ": " << I << "\n";
 			//cout<<"very bad"<<endl;
 			*err = - 1;
@@ -497,14 +525,15 @@ void* msl_approx(void *in_arg) {
 
 double residual_compute(double *x , parral &par, double (*f) (double, double) , double *buf, int p , int k){
 	int ny = par.ny , nx = par.nx;
-	int begin = k*(nx+1) / p;
-	int end = (k+1)*(nx+1) / p;
+	int nx_rect = par.nx_rect , ny_rect = par.ny_rect;
+	int begin = k*(nx+1 - nx_rect) / p;
+	int end = (k+1)*(nx+1 - nx_rect ) / p;
 	
 
 	buf[k] = 0;
 	double resid = 0;
 	for(int i = begin ; i <end;i++){
-		if(i==nx){
+		if(i==nx - nx_rect){
 			for( int l = 0 ; l < ny - 1; l++){
 				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
 				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
@@ -522,10 +551,36 @@ double residual_compute(double *x , parral &par, double (*f) (double, double) , 
 				buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l], f) - (x[I(i,l)] + x[I(i+1,l)])/2 ));
 				buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
 				buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l+1], f) - (x[I(i,l+1)] + x[I(i+1,l+1)])/2));
-				buf[k] = max(buf[k] , abs(par.f_par((2*par.xs[i] + par.xs[i+1])/3 , (2*par.ys[l+1] + par.ys[l])/3, f) - (x[I(i,l+1)] + x[I(i+1,l+1)] + x[I(i,l)])/3));
+				//buf[k] = max(buf[k] , abs(par.f_par((2*par.xs[i] + par.xs[i+1])/3 , (2*par.ys[l+1] + par.ys[l])/3, f) - (x[I(i,l+1)] + x[I(i+1,l+1)] + x[I(i,l)])/3));
 			}
 		}
 	}
+	if(nx_rect!=0){
+	int begin = k*(nx_rect) / p;
+	int end = (k+1)*(nx_rect ) / p;
+	
+	
+	for(int i = nx  - nx_rect + begin ; i <end;i++){
+			if(i==nx){
+				for( int l = 0 ; l < ny - ny_rect - 1; l++){
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
+				}
+			}else{
+				for( int l = 0 ; l < ny - ny_rect - 1; l++){
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l] , f) - x[I(i,l)] ));
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i,l+1)])/2 ));
+					buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , (par.ys[l] + par.ys[l+1])/2 , f) - (x[I(i,l)] + x[I(i+1,l+1)])/2 ));
+					buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l], f) - (x[I(i,l)] + x[I(i+1,l)])/2 ));
+					buf[k] = max(buf[k] , abs(par.f_par(par.xs[i] , par.ys[l+1], f) - (x[I(i,l+1)]) ));
+					buf[k] = max(buf[k] , abs(par.f_par((par.xs[i] + par.xs[i+1])/2 , par.ys[l+1], f) - (x[I(i,l+1)] + x[I(i+1,l+1)])/2));
+					//buf[k] = max(buf[k] , abs(par.f_par((2*par.xs[i] + par.xs[i+1])/3 , (2*par.ys[l+1] + par.ys[l])/3, f) - (x[I(i,l+1)] + x[I(i+1,l+1)] + x[I(i,l)])/3));
+				}
+			}
+		}
+	}
+	
 	
 	reduce_sum(p);
 	for(int i = 0 ; i < p; i++){
@@ -622,7 +677,7 @@ int one_solve_step(double *A , int *I , double *x , double *b , double * u , dou
 		c2 = scalar_prod(u,u,buf,p,k,N);
 
 	
-		if(c1 < EPS*EPS*b_norm || c2 < EPS*EPS*b_norm ){
+		if(c1 < EPS*EPS*b_norm && c2 < EPS*EPS*b_norm ){
 			return i;
 		}
 		tau = c1/c2;

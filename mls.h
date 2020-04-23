@@ -11,7 +11,7 @@
 using namespace std;
 
 
-#define EPS 1e-14
+#define EPS 1e-15
 
 #define LOG(...) std::cout<< #__VA_ARGS__<< " = " <<(__VA_ARGS__)<< "\n"
 #define ELOG(...) std::cout << "[" << __FILE__ << ":" << __LINE__ << "] " << #__VA_ARGS__<< " = " <<(__VA_ARGS__)<< "\n"
@@ -27,7 +27,7 @@ using namespace std;
 struct parral{
 public:
 	double l1 = 1 , l2 = 1, alpha = 45./(180./M_PI) , k = 0.2 , hx, hy;
-	int nx = 10 , ny = 10;
+	int nx = 10 , ny = 10 , nx_rect = 0 , ny_rect = 0;
 	double *xs = nullptr, *ys = nullptr;
 	double l1_new , l2_new = l2;
 	parral(){};	
@@ -36,6 +36,9 @@ public:
 		k = k_; nx = nx_; ny = ny_;
 		l1_new = sin(alpha)*l1; l2_new = l2;
 		hx = l2_new / nx; hy = l1_new / ny;
+		nx_rect =k*l2_new/hx;
+		ny_rect =k*l1_new/hy;
+		
 		xs = new double[nx + 1];
 		ys = new double[ny + 1];
 		compute_grid();
@@ -82,9 +85,9 @@ double residual_compute(double *x , parral &par, double (*f) (double, double) , 
 
 int get_k(int nx , int ny , int i , int j);
 void get_ij(int nx, int ny, int k, int &i , int &j);
-int get_num_offdiag(int nx, int ny, int k);
-int get_non_zeros(int nx, int ny);
-int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int *I);
+int get_num_offdiag(int nx, int ny, int nx_rect, int ny_rect,int k);
+int get_non_zeros(int nx, int ny , int nx_rect, int ny_rect);
+int get_offdiag_elem( int nx , int ny , int nx_rect, int ny_rect, int k , double *a_diag , double *a , int *I);
 int allocate_MSR_matrix(int nx, int ny , double *&p_a , double *&p_I);
 int get_offdiag_elem( int nx , int ny , int k , double *a_diag , double *a , int *I , double * b ,double hx, double hy , parral &par , double (*f) (double,double));
 void build_MSR_matrix(int nx , int ny, double*a, int *I, double *b, int p , int k , parral &par , double (*f) (double,double));
